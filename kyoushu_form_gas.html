@@ -89,6 +89,42 @@ body{font-family:-apple-system,'Hiragino Sans','Yu Gothic',sans-serif;background
 @keyframes spin{to{transform:rotate(360deg)}}
 .dv{height:1px;background:var(--border);margin:.875rem 0}
 .bk{font-size:12px;color:var(--t3);text-align:center;margin-top:.75rem;cursor:pointer;text-decoration:underline}
+.ms{font-size:12px;color:var(--t3);text-align:center;margin-top:1rem;cursor:pointer;text-decoration:underline}
+.alw{text-align:center;padding:1.5rem 0}
+.alw h2{font-size:16px;font-weight:700;margin-bottom:.5rem}
+.alw p{font-size:13px;color:var(--t2);margin-bottom:1.25rem}
+.pr{display:flex;gap:8px}
+.pr input{flex:1;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:15px;background:var(--card)}
+.pr input:focus{outline:none;border-color:var(--g)}
+.pr button{padding:10px 16px;border-radius:8px;background:var(--g);color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer}
+.sts{display:flex;gap:7px;margin-bottom:1rem;flex-wrap:wrap}
+.st{background:var(--card);border-radius:8px;padding:.625rem .875rem;flex:1;min-width:68px;box-shadow:var(--sh)}
+.sn{font-size:20px;font-weight:700}.sl3{font-size:11px;color:var(--t2);margin-top:1px}
+.srt{display:flex;gap:5px;margin-bottom:1rem;flex-wrap:wrap}
+.sb2{padding:6px 12px;font-size:12px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--t2);cursor:pointer;font-weight:500}
+.sb2.on{background:var(--bg);color:var(--t);border-color:#aaa;font-weight:600}
+.gl2{font-size:12px;font-weight:600;color:var(--t2);padding:5px 0 3px;border-bottom:1px solid var(--border);margin-bottom:7px;margin-top:.875rem;display:flex;align-items:center;gap:5px}
+.gl2:first-child{margin-top:0}
+.gc{font-size:11px;background:var(--bg);border-radius:9px;padding:1px 7px}
+.rc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.875rem 1rem;margin-bottom:7px}
+.rt{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.rn{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.rnm{font-size:14px;font-weight:600}
+.rid{font-size:12px;font-weight:700;color:var(--b);background:var(--bl);border-radius:5px;padding:1px 7px;letter-spacing:.08em}
+.ron{font-size:11px;color:var(--t3);background:var(--bg);border-radius:9px;padding:1px 7px}
+.rv{display:inline-flex;font-size:11px;padding:2px 8px;border-radius:8px;margin-bottom:5px;margin-right:3px;font-weight:500;background:var(--gl);color:var(--gd)}
+.tb{display:inline-flex;font-size:11px;padding:2px 8px;border-radius:8px;margin-bottom:5px;font-weight:500}
+.tbn{background:var(--gl);color:var(--gd)}.tbr{background:var(--yl);color:var(--yd)}.tbs{background:var(--bl);color:var(--bd)}
+.rs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px}
+.rch{font-size:11px;padding:2px 8px;border-radius:9px;background:var(--gl);color:var(--gd)}
+.rch.hl{background:var(--g);color:#fff}
+.rno{font-size:12px;color:var(--t2);margin-bottom:5px}
+.rf{display:flex;align-items:center;gap:7px}
+.db{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 9px;border-radius:9px;background:var(--gl);color:var(--gd);font-weight:500}
+.cb{font-size:12px;padding:5px 11px;border-radius:7px;border:1px solid var(--border);cursor:pointer;background:var(--bg);font-weight:500}
+.cb:hover{border-color:var(--g)}
+.rmt{font-size:11px;color:var(--t3);margin-left:auto}
+.ld{text-align:center;padding:2rem;color:var(--t2);font-size:13px}
 </style>
 </head>
 <body>
@@ -449,47 +485,7 @@ async function toggleSlotEditor(key, date, time, vehicle, btn){
 
 function slotPrevWeek(){ slotWo--; loadSlotEditor(); }
 function slotNextWeek(){ slotWo++; loadSlotEditor(); }
-</script>
 
-<!-- ===== 管理画面用CSS ===== -->
-<style>
-.ms{font-size:12px;color:var(--t3);text-align:center;margin-top:1rem;cursor:pointer;text-decoration:underline}
-.alw{text-align:center;padding:1.5rem 0}
-.alw h2{font-size:16px;font-weight:700;margin-bottom:.5rem}
-.alw p{font-size:13px;color:var(--t2);margin-bottom:1.25rem}
-.pr{display:flex;gap:8px}
-.pr input{flex:1;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:15px;background:var(--card)}
-.pr input:focus{outline:none;border-color:var(--g)}
-.pr button{padding:10px 16px;border-radius:8px;background:var(--g);color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer}
-.sts{display:flex;gap:7px;margin-bottom:1rem;flex-wrap:wrap}
-.st{background:var(--card);border-radius:8px;padding:.625rem .875rem;flex:1;min-width:68px;box-shadow:var(--sh)}
-.sn{font-size:20px;font-weight:700}.sl3{font-size:11px;color:var(--t2);margin-top:1px}
-.srt{display:flex;gap:5px;margin-bottom:1rem;flex-wrap:wrap}
-.sb2{padding:6px 12px;font-size:12px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--t2);cursor:pointer;font-weight:500}
-.sb2.on{background:var(--bg);color:var(--t);border-color:#aaa;font-weight:600}
-.gl2{font-size:12px;font-weight:600;color:var(--t2);padding:5px 0 3px;border-bottom:1px solid var(--border);margin-bottom:7px;margin-top:.875rem;display:flex;align-items:center;gap:5px}
-.gl2:first-child{margin-top:0}
-.gc{font-size:11px;background:var(--bg);border-radius:9px;padding:1px 7px}
-.rc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.875rem 1rem;margin-bottom:7px}
-.rt{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
-.rn{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.rnm{font-size:14px;font-weight:600}
-.rid{font-size:12px;font-weight:700;color:var(--b);background:var(--bl);border-radius:5px;padding:1px 7px;letter-spacing:.08em}
-.ron{font-size:11px;color:var(--t3);background:var(--bg);border-radius:9px;padding:1px 7px}
-.rv{display:inline-flex;font-size:11px;padding:2px 8px;border-radius:8px;margin-bottom:5px;margin-right:3px;font-weight:500;background:var(--gl);color:var(--gd)}
-.tb{display:inline-flex;font-size:11px;padding:2px 8px;border-radius:8px;margin-bottom:5px;font-weight:500}
-.tbn{background:var(--gl);color:var(--gd)}.tbr{background:var(--yl);color:var(--yd)}.tbs{background:var(--bl);color:var(--bd)}
-.rs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px}
-.rch{font-size:11px;padding:2px 8px;border-radius:9px;background:var(--gl);color:var(--gd)}
-.rch.hl{background:var(--g);color:#fff}
-.rno{font-size:12px;color:var(--t2);margin-bottom:5px}
-.rf{display:flex;align-items:center;gap:7px}
-.db{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 9px;border-radius:9px;background:var(--gl);color:var(--gd);font-weight:500}
-.cb{font-size:12px;padding:5px 11px;border-radius:7px;border:1px solid var(--border);cursor:pointer;background:var(--bg);font-weight:500}
-.cb:hover{border-color:var(--g)}
-.rmt{font-size:11px;color:var(--t3);margin-left:auto}
-.ld{text-align:center;padding:2rem;color:var(--t2);font-size:13px}
-</style>
 
 <!-- ===== 管理ログイン画面 ===== -->
 <div class="screen" id="sc-admin-login">
@@ -554,7 +550,6 @@ function slotNextWeek(){ slotWo++; loadSlotEditor(); }
 </div>
 
 <!-- ===== 管理画面用JS ===== -->
-<script>
 // 教習生フォームの一番下に管理画面リンクを追加
 document.getElementById('sc-login').insertAdjacentHTML('beforeend','<div class="ms" onclick="show(\'sc-admin-login\')">管理画面はこちら（スタッフ専用）</div>');
 
