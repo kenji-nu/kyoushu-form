@@ -352,6 +352,103 @@ async function doSubmit(){
 }
 
 function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+
+// ── 管理画面タブ切替 ──
+function switchTab(tab){
+  document.getElementById('admin-list-tab').style.display = tab==='list' ? 'block' : 'none';
+  document.getElementById('admin-slots-tab').style.display = tab==='slots' ? 'block' : 'none';
+  document.getElementById('tab-list').classList.toggle('on', tab==='list');
+  document.getElementById('tab-slots').classList.toggle('on', tab==='slots');
+  if(tab==='slots') loadSlotEditor();
+}
+
+// ── 空き枠設定カレンダー ──
+let slotWo=0, slotData2={};
+const TIMES2=['1限 8:30〜9:20','2限 9:30〜10:20','3限 10:30〜11:20','4限 11:30〜12:20','5限 12:30〜13:20','6限 13:30〜14:20','7限 14:30〜15:20','8限 15:30〜16:20','9限 16:30〜17:20','10限 17:40〜18:30','11限 18:40〜19:30','12限 19:40〜20:30'];
+const DN2=['日','月','火','水','木','金','土'];
+
+function getWD2(o){
+  const t=new Date(),d=t.getDay(),m=new Date(t);
+  m.setDate(t.getDate()-(d===0?6:d-1)+o*7);
+  return Array.from({length:7},(_,i)=>{const x=new Date(m);x.setDate(m.getDate()+i);return x;});
+}
+function fmt2(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+async function loadSlotEditor(){
+  const vehicle = document.getElementById('slot-vehicle-sel').value;
+  const dates = getWD2(slotWo);
+  const f=d=>`${d.getMonth()+1}/${d.getDate()}`;
+  document.getElementById('slot-wlabel').textContent=`${f(dates[0])}（月）〜 ${f(dates[6])}（日）`;
+  
+  // GASから空き枠データを取得
+  try{
+    const res=await fetch(`${GAS_URL}?action=getSlots&from=${fmt2(dates[0])}&to=${fmt2(dates[6])}&vehicle=${encodeURIComponent(vehicle)}`);
+    const data=await res.json();
+    slotData2=data.slots||{};
+  }catch(e){ slotData2={}; }
+  
+  renderSlotGrid(vehicle, dates);
+}
+
+function renderSlotGrid(vehicle, dates){
+  const g=document.getElementById('slot-grid');
+  
+  // グリッドのスタイル
+  g.style.cssText='display:grid;grid-template-columns:80px repeat(7,1fr);gap:3px;min-width:420px';
+  g.innerHTML='';
+  
+  // ヘッダー行
+  const th=document.createElement('div');th.style.cssText='font-size:11px;color:var(--t2)';g.appendChild(th);
+  const today=new Date();
+  dates.forEach(d=>{
+    const h=document.createElement('div');
+    h.style.cssText=`font-size:11px;font-weight:600;text-align:center;padding:4px 2px;color:${d.toDateString()===today.toDateString()?'var(--b)':'var(--t2)'};border-bottom:1px solid var(--border)`;
+    h.textContent=`${DN2[d.getDay()]} ${d.getDate()}`;
+    g.appendChild(h);
+  });
+  
+  // 時限ごとの行
+  TIMES2.forEach(t=>{
+    const tl=document.createElement('div');
+    tl.style.cssText='font-size:10px;color:var(--t3);text-align:right;padding-right:6px;padding-top:6px;line-height:1.3';
+    tl.textContent=t.replace(' ','\n');
+    g.appendChild(tl);
+    
+    dates.forEach(d=>{
+      const key=`${fmt2(d)}_${t}`;
+      const isOpen=!!slotData2[key];
+      const btn=document.createElement('button');
+      btn.style.cssText=`height:36px;border-radius:4px;font-size:14px;cursor:pointer;border:1.5px solid transparent;transition:all .15s;width:100%;${isOpen?'background:var(--gl);border-color:#5DCAA5':'background:var(--bg);color:var(--t3)'}`;
+      btn.textContent=isOpen?'✅':'❌';
+      btn.onclick=()=>toggleSlotEditor(key, d, t, vehicle, btn);
+      g.appendChild(btn);
+    });
+  });
+}
+
+async function toggleSlotEditor(key, date, time, vehicle, btn){
+  const isOpen=!!slotData2[key];
+  const newOpen=!isOpen;
+  
+  // UIを即時更新
+  slotData2[key]=newOpen||undefined;
+  if(!newOpen) delete slotData2[key];
+  btn.textContent=newOpen?'✅':'❌';
+  btn.style.background=newOpen?'var(--gl)':'var(--bg)';
+  btn.style.borderColor=newOpen?'#5DCAA5':'transparent';
+  btn.style.color=newOpen?'':'var(--t3)';
+  
+  // GASに保存
+  try{
+    await fetch(GAS_URL,{method:'POST',body:JSON.stringify({
+      action:'updateSlot',
+      date:fmt2(date), time, vehicle, open:newOpen
+    })});
+  }catch(e){}
+}
+
+function slotPrevWeek(){ slotWo--; loadSlotEditor(); }
+function slotNextWeek(){ slotWo++; loadSlotEditor(); }
 </script>
 
 <!-- ===== 管理画面用CSS ===== -->
@@ -408,12 +505,46 @@ function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.r
       <div class="er" id="pe" style="text-align:center;margin-top:8px">パスワードが違います</div>
     </div>
   </div>
+  </div><!-- /admin-list-tab -->
+
+  <!-- 空き枠設定タブ -->
+  <div id="admin-slots-tab" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+      <label class="fl" style="margin:0">車種：</label>
+      <select id="slot-vehicle-sel" onchange="loadSlotEditor()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--card)">
+        <option>普通（AT）</option><option>普通（MT）</option><option>大型</option>
+        <option>中型</option><option>準中型</option><option>大型二輪</option>
+        <option>普通自動二輪（MT）</option><option>普通自動二輪（AT）</option>
+        <option>小型二輪（MT）</option><option>小型二輪（AT）</option>
+        <option>大型特殊</option><option>牽引</option><option>審査</option>
+      </select>
+    </div>
+    <div class="wn">
+      <button onclick="slotPrevWeek()">‹ 前の週</button>
+      <span class="wl" id="slot-wlabel"></span>
+      <button onclick="slotNextWeek()">次の週 ›</button>
+    </div>
+    <div style="overflow-x:auto;margin-bottom:1rem">
+      <div id="slot-grid"></div>
+    </div>
+    <div style="font-size:12px;color:var(--t2);margin-bottom:1rem">
+      ✅ = 空きあり　　❌ = 受付終了　　タップで切り替え
+    </div>
+  </div>
+
   <div class="bk" onclick="show('sc-login')">← 教習生フォームに戻る</div>
 </div>
 
 <!-- ===== 管理画面 ===== -->
 <div class="screen" id="sc-admin">
   <div class="hdr"><div class="hi">📋</div><div><div class="hs">静岡県自動車学校 沼津校 — 管理画面</div><div class="ht">技能教習 申し込み一覧</div></div></div>
+  <div style="display:flex;gap:8px;margin-bottom:1rem">
+    <button class="sb2 on" id="tab-list" onclick="switchTab('list')">📋 申込一覧</button>
+    <button class="sb2" id="tab-slots" onclick="switchTab('slots')">📅 空き枠設定</button>
+  </div>
+
+  <!-- 申込一覧タブ -->
+  <div id="admin-list-tab">
   <div class="sts" id="sts"></div>
   <div class="srt">
     <button class="sb2 on" id="s-order" onclick="setSort('order')">申込順</button>
@@ -422,6 +553,33 @@ function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.r
     <button class="sb2" id="s-transport" onclick="setSort('transport')">来校方法別</button>
   </div>
   <div id="la"><div class="ld">読み込み中...</div></div>
+  </div><!-- /admin-list-tab -->
+
+  <!-- 空き枠設定タブ -->
+  <div id="admin-slots-tab" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+      <label class="fl" style="margin:0">車種：</label>
+      <select id="slot-vehicle-sel" onchange="loadSlotEditor()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--card)">
+        <option>普通（AT）</option><option>普通（MT）</option><option>大型</option>
+        <option>中型</option><option>準中型</option><option>大型二輪</option>
+        <option>普通自動二輪（MT）</option><option>普通自動二輪（AT）</option>
+        <option>小型二輪（MT）</option><option>小型二輪（AT）</option>
+        <option>大型特殊</option><option>牽引</option><option>審査</option>
+      </select>
+    </div>
+    <div class="wn">
+      <button onclick="slotPrevWeek()">‹ 前の週</button>
+      <span class="wl" id="slot-wlabel"></span>
+      <button onclick="slotNextWeek()">次の週 ›</button>
+    </div>
+    <div style="overflow-x:auto;margin-bottom:1rem">
+      <div id="slot-grid"></div>
+    </div>
+    <div style="font-size:12px;color:var(--t2);margin-bottom:1rem">
+      ✅ = 空きあり　　❌ = 受付終了　　タップで切り替え
+    </div>
+  </div>
+
   <div class="bk" onclick="show('sc-login')">← 教習生フォームに戻る</div>
 </div>
 
