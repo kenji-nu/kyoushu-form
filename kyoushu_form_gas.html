@@ -188,7 +188,8 @@ body{font-family:-apple-system,'Hiragino Sans','Yu Gothic',sans-serif;background
 <div class="screen" id="sc-thanks">
   <div class="tic">✓</div>
   <div class="ttl">受け付けました！</div>
-  <div class="tmg">担当者より順次お電話いたします。<br>しばらくお待ちください。</div>
+  <div class="tmg">担当者よりお電話にてご連絡いたします。<br>一定期間内に連絡がない場合は、<br>今回の枠はご案内できかねますので、<br>また次の機会をご検討ください。</div>
+  <div style="background:#FFF3CD;border-radius:8px;padding:.875rem 1rem;font-size:12px;color:#7D4E00;line-height:1.7;margin-bottom:1rem;text-align:left">⚠️ エントリーのタイミングまたは教習項目等によってはご案内できかねる場合がございます。あらかじめご了承ください。</div>
   <div class="card" id="ss"></div>
   <div class="bk" onclick="show('sc-login')">← トップに戻る</div>
 </div>
@@ -468,6 +469,60 @@ async function markDone(id){
   rAdmin();
 }
 
+// 予約確定後に同じ枠のエントリー者一覧を表示
+async function markDoneWithModal(id){
+  await markDone(id);
+  // 確定した枠を取得
+  const confirmed = AD.find(d=>d.id===id);
+  if(!confirmed||!confirmed.slots) return;
+  const confirmedSlots = confirmed.slots.split('、');
+  
+  // 同じ枠をエントリーしていた未対応の人を抽出
+  const targets = AD.filter(d=>{
+    if(d.id===id) return false;
+    if(d.status==='confirmed'||d.status==='rejected') return false;
+    if(!d.slots) return false;
+    const dSlots = d.slots.split('、');
+    return confirmedSlots.some(s=>dSlots.includes(s));
+  });
+
+  if(targets.length===0){ rAdmin(); return; }
+
+  // モーダル表示
+  const overlay = document.createElement('div');
+  overlay.id = 'conflict-modal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem';
+  
+  const cards = targets.map(d=>`
+    <div style="background:#f5f7f9;border-radius:8px;padding:.75rem 1rem;margin-bottom:8px;font-size:13px">
+      <div style="font-weight:600;margin-bottom:3px">${d.name} <span style="font-size:11px;color:#185FA5;background:#E6F1FB;border-radius:4px;padding:1px 6px">${d.studentId}</span></div>
+      <div style="font-size:11px;color:#666">${d.slots}</div>
+    </div>
+  `).join('');
+
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:1.5rem;max-width:400px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.15)">
+      <div style="font-size:15px;font-weight:700;margin-bottom:.5rem">同じ枠のエントリー者</div>
+      <div style="font-size:13px;color:#666;margin-bottom:1rem;line-height:1.6">以下の方は同じ枠をエントリーしています。<br>「今回はご案内できませんでした」に変更しますか？</div>
+      ${cards}
+      <div style="display:flex;gap:8px;margin-top:1rem">
+        <button onclick="document.getElementById('conflict-modal').remove();rAdmin();" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e2e6ea;background:#f5f7f9;font-size:13px;font-weight:600;cursor:pointer">後で対応する</button>
+        <button onclick="rejectAll([${targets.map(d=>d.id).join(',')}])" style="flex:1;padding:10px;border-radius:8px;background:#1D9E75;color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer">まとめて変更する</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+// まとめてご案内不可にする
+async function rejectAll(ids){
+  document.getElementById('conflict-modal').remove();
+  for(const id of ids){
+    await markReject(id);
+  }
+  rAdmin();
+}
+
 async function markReject(id){
   try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'markReject',id})});}catch(e){}
   const e=AD.find(d=>d.id===id);if(e){e.status='rejected';}
@@ -483,7 +538,7 @@ function rAdmin(){
     <div class="st"><div class="sn">${total}</div><div class="sl3">総申込</div></div>
     <div class="st"><div class="sn" style="color:var(--red)">${pending}</div><div class="sl3">未対応</div></div>
     <div class="st"><div class="sn" style="color:var(--gd)">${AD.filter(d=>d.status==='confirmed').length}</div><div class="sl3">予約確定</div></div>
-    <div class="st"><div class="sn" style="color:var(--t3)">${rejected}</div><div class="sl3">お断り済み</div></div>
+    <div class="st"><div class="sn" style="color:var(--t3)">${rejected}</div><div class="sl3">ご案内できませんでした</div></div>
   `;
   const area=document.getElementById('la');area.innerHTML='';
   if(srt==='order'){[...AD].sort((a,b)=>a.id-b.id).forEach((d,i)=>area.appendChild(mkC(d,i+1,null)));}
@@ -523,10 +578,10 @@ function mkC(d,n,hl){
       ${d.status==='confirmed'
         ?`<div class="db">✓ 予約確定</div>`
         :d.status==='rejected'
-        ?`<div style="display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 9px;border-radius:9px;background:#f5f5f5;color:var(--t3);font-weight:500">✕ お断り済み</div>`
+        ?`<div style="display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 9px;border-radius:9px;background:#f5f5f5;color:var(--t3);font-weight:500">今回はご案内できませんでした</div>`
         :`<div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="cb" onclick="markDone(${d.id})">📞 予約確定</button>
-            <button class="cb" style="color:var(--red);border-color:#f5c6c6" onclick="markReject(${d.id})">✕ お断り</button>
+            <button class="cb" onclick="markDoneWithModal(${d.id})">📞 予約確定</button>
+            <button class="cb" style="color:var(--red);border-color:#f5c6c6" onclick="markReject(${d.id})">今回はご案内できませんでした</button>
           </div>`
       }
       ${n===null?`<span class="rmt">${d.submittedAt}</span>`:''}
