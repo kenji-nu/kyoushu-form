@@ -529,6 +529,12 @@ async function markReject(id){
   rAdmin();
 }
 
+async function markPending(id){
+  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'markPending',id})});}catch(e){}
+  const e=AD.find(d=>d.id===id);if(e){e.status='pending';e.done=false;}
+  rAdmin();
+}
+
 function rAdmin(){
   const total=AD.length,pending=AD.filter(d=>!d.done&&d.status!=='rejected').length,rejected=AD.filter(d=>d.status==='rejected').length;
   const bN=AD.filter(d=>d.transport==='送迎バス希望（新規）').length;
@@ -544,20 +550,68 @@ function rAdmin(){
   if(srt==='order'){[...AD].sort((a,b)=>a.id-b.id).forEach((d,i)=>area.appendChild(mkC(d,i+1,null)));}
   else if(srt==='vehicle'){
     const vs=[...new Set(AD.map(d=>d.vehicle))];
-    vs.forEach(v=>{const g=AD.filter(d=>d.vehicle===v);if(!g.length)return;area.appendChild(mkG(`🚗 ${v}`,g.length));g.forEach((d,i)=>area.appendChild(mkC(d,i+1,null)));});
+    vs.forEach(v=>{const g=AD.filter(d=>d.vehicle===v);if(!g.length)return;area.appendChild(mkG(`🚗 ${v}`,g.length,null));g.forEach((d,i)=>area.appendChild(mkC(d,i+1,null)));});
   }else if(srt==='time'){
     const map={};
     AD.forEach(d=>{if(!d.slots)return;d.slots.split('、').forEach(s=>{if(!map[s])map[s]=[];map[s].push(d);});});
-    Object.keys(map).sort((a,b)=>dO(a)!==dO(b)?dO(a)-dO(b):tO(a)-tO(b)).forEach(k=>{area.appendChild(mkG(`🕐 ${k}`,map[k].length));map[k].forEach(d=>area.appendChild(mkC(d,null,k)));});
+    Object.keys(map).sort((a,b)=>dO(a)!==dO(b)?dO(a)-dO(b):tO(a)-tO(b)).forEach(k=>{area.appendChild(mkG(`🕐 ${k}`,map[k].length,k));map[k].forEach(d=>area.appendChild(mkC(d,null,k)));});
   }else{
     [['送迎バス希望（新規）','🚌 送迎バス希望（新規）'],['送迎バス予約済み','🚌 送迎バス予約済み'],['自力で来校','🚶 自力で来校']].forEach(([t,l])=>{
       const g=AD.filter(d=>d.transport===t);if(!g.length)return;
-      area.appendChild(mkG(l,g.length));g.forEach((d,i)=>area.appendChild(mkC(d,i+1,null)));
+      area.appendChild(mkG(l,g.length,null));g.forEach((d,i)=>area.appendChild(mkC(d,i+1,null)));
     });
   }
 }
 
-function mkG(h,c){const e=document.createElement('div');e.className='gl2';e.innerHTML=`${h}<span class="gc">${c}名</span>`;return e;}
+function mkG(h,c,slotKey){
+  const e=document.createElement('div');e.className='gl2';
+  // 時間帯別表示の場合のみ一括ボタンを表示
+  const batchBtn = slotKey
+    ? `<button style="margin-left:auto;font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid #f5c6c6;background:#fff5f5;color:var(--red);cursor:pointer;font-weight:500" onclick="batchReject('${slotKey}')">この枠を一括でご案内不可</button>`
+    : '';
+  e.innerHTML=`${h}<span class="gc">${c}名</span>${batchBtn}`;
+  return e;
+}
+
+// 枠ごとに一括でご案内不可にする
+function batchReject(slotKey){
+  const targets = AD.filter(d=>{
+    if(d.status==='confirmed'||d.status==='rejected') return false;
+    if(!d.slots) return false;
+    return d.slots.split('、').includes(slotKey);
+  });
+  if(targets.length===0){ alert('対象のエントリー者はいません'); return; }
+
+  const overlay=document.createElement('div');
+  overlay.id='batch-modal';
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem';
+
+  const cards=targets.map(d=>`
+    <div style="background:#f5f7f9;border-radius:8px;padding:.75rem 1rem;margin-bottom:8px;font-size:13px">
+      <div style="font-weight:600;margin-bottom:3px">${d.name} <span style="font-size:11px;color:#185FA5;background:#E6F1FB;border-radius:4px;padding:1px 6px">${d.studentId}</span></div>
+      <div style="font-size:11px;color:#666">${d.slots}</div>
+    </div>
+  `).join('');
+
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:12px;padding:1.5rem;max-width:400px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.15)">
+      <div style="font-size:15px;font-weight:700;margin-bottom:.5rem">一括でご案内不可にする</div>
+      <div style="font-size:13px;color:#666;margin-bottom:1rem;line-height:1.6">以下の方を「今回はご案内できませんでした」に変更します。<br>後から個別に「未対応に戻す」もできます。</div>
+      ${cards}
+      <div style="display:flex;gap:8px;margin-top:1rem">
+        <button onclick="document.getElementById('batch-modal').remove();" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e2e6ea;background:#f5f7f9;font-size:13px;font-weight:600;cursor:pointer">キャンセル</button>
+        <button onclick="batchRejectAll([${targets.map(d=>d.id).join(',')}])" style="flex:1;padding:10px;border-radius:8px;background:#A32D2D;color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer">一括実行する</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function batchRejectAll(ids){
+  document.getElementById('batch-modal').remove();
+  for(const id of ids){ await markReject(id); }
+  rAdmin();
+}
 
 function mkC(d,n,hl){
   const card=document.createElement('div');card.className='rc';
