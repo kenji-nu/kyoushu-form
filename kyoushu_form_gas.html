@@ -569,6 +569,11 @@ function chkPw(){
 
 async function showAdmin(){
   show('sc-admin');
+  // タブ初期化
+  document.getElementById('admin-list-tab').style.display='block';
+  document.getElementById('admin-slots-tab').style.display='none';
+  document.getElementById('tab-list').classList.add('on');
+  document.getElementById('tab-slots').classList.remove('on');
   document.getElementById('la').innerHTML='<div class="ld">読み込み中...</div>';
   try{
     const res=await fetch(`${GAS_URL}?action=getEntries`);
