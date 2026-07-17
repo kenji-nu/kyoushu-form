@@ -505,36 +505,6 @@ function slotNextWeek(){ slotWo++; loadSlotEditor(); }
       <div class="er" id="pe" style="text-align:center;margin-top:8px">パスワードが違います</div>
     </div>
   </div>
-  </div><!-- /admin-list-tab -->
-
-  <!-- 空き枠設定タブ -->
-  <div id="admin-slots-tab" style="display:none">
-    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
-      <label class="fl" style="margin:0">車種：</label>
-      <select id="slot-vehicle-sel" onchange="loadSlotEditor()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--card)">
-        <option>普通（AT）</option><option>普通（MT）</option><option>大型</option>
-        <option>中型</option><option>準中型</option><option>大型二輪</option>
-        <option>普通自動二輪（MT）</option><option>普通自動二輪（AT）</option>
-        <option>小型二輪（MT）</option><option>小型二輪（AT）</option>
-        <option>大型特殊</option><option>牽引</option><option>審査</option>
-      </select>
-    </div>
-    <div class="wn">
-      <button onclick="slotPrevWeek()">‹ 前の週</button>
-      <span class="wl" id="slot-wlabel"></span>
-      <button onclick="slotNextWeek()">次の週 ›</button>
-    </div>
-    <div style="overflow-x:auto;margin-bottom:1rem">
-      <div id="slot-grid"></div>
-    </div>
-    <div style="font-size:12px;color:var(--t2);margin-bottom:1rem">
-      ✅ = 空きあり　　❌ = 受付終了　　タップで切り替え
-    </div>
-  </div>
-
-  <div class="bk" onclick="show('sc-login')">← 教習生フォームに戻る</div>
-</div>
-
 <!-- ===== 管理画面 ===== -->
 <div class="screen" id="sc-admin">
   <div class="hdr"><div class="hi">📋</div><div><div class="hs">静岡県自動車学校 沼津校 — 管理画面</div><div class="ht">技能教習 申し込み一覧</div></div></div>
