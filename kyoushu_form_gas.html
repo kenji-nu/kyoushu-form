@@ -464,21 +464,26 @@ function tO(s){const m=s.match(/(\d+)限/);return m?+m[1]:999;}
 
 async function markDone(id){
   try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'markDone',id})});}catch(e){}
-  const e=AD.find(d=>d.id===id);if(e)e.done=true;
+  const e=AD.find(d=>d.id===id);if(e){e.done=true;e.status='confirmed';}
+  rAdmin();
+}
+
+async function markReject(id){
+  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'markReject',id})});}catch(e){}
+  const e=AD.find(d=>d.id===id);if(e){e.status='rejected';}
   rAdmin();
 }
 
 function rAdmin(){
-  const total=AD.length,pending=AD.filter(d=>!d.done).length;
+  const total=AD.length,pending=AD.filter(d=>!d.done&&d.status!=='rejected').length,rejected=AD.filter(d=>d.status==='rejected').length;
   const bN=AD.filter(d=>d.transport==='送迎バス希望（新規）').length;
   const bR=AD.filter(d=>d.transport==='送迎バス予約済み').length;
   const sf=AD.filter(d=>d.transport==='自力で来校').length;
   document.getElementById('sts').innerHTML=`
     <div class="st"><div class="sn">${total}</div><div class="sl3">総申込</div></div>
-    <div class="stat"><div class="sn" style="color:var(--red)">${pending}</div><div class="sl3">未対応</div></div>
-    <div class="st"><div class="sn" style="color:var(--gd)">${bN}</div><div class="sl3">バス希望</div></div>
-    <div class="st"><div class="sn" style="color:var(--yd)">${bR}</div><div class="sl3">バス済み</div></div>
-    <div class="st"><div class="sn" style="color:var(--bd)">${sf}</div><div class="sl3">自力来校</div></div>
+    <div class="st"><div class="sn" style="color:var(--red)">${pending}</div><div class="sl3">未対応</div></div>
+    <div class="st"><div class="sn" style="color:var(--gd)">${AD.filter(d=>d.status==='confirmed').length}</div><div class="sl3">予約確定</div></div>
+    <div class="st"><div class="sn" style="color:var(--t3)">${rejected}</div><div class="sl3">お断り済み</div></div>
   `;
   const area=document.getElementById('la');area.innerHTML='';
   if(srt==='order'){[...AD].sort((a,b)=>a.id-b.id).forEach((d,i)=>area.appendChild(mkC(d,i+1,null)));}
@@ -515,7 +520,15 @@ function mkC(d,n,hl){
     <div class="rs">${chips}</div>
     ${d.note?`<div class="rno">💬 ${d.note}</div>`:''}
     <div class="rf">
-      ${d.done?`<div class="db">✓ 電話済み・予約確定</div>`:`<button class="cb" onclick="markDone(${d.id})">📞 電話して予約確定</button>`}
+      ${d.status==='confirmed'
+        ?`<div class="db">✓ 予約確定</div>`
+        :d.status==='rejected'
+        ?`<div style="display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 9px;border-radius:9px;background:#f5f5f5;color:var(--t3);font-weight:500">✕ お断り済み</div>`
+        :`<div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="cb" onclick="markDone(${d.id})">📞 予約確定</button>
+            <button class="cb" style="color:var(--red);border-color:#f5c6c6" onclick="markReject(${d.id})">✕ お断り</button>
+          </div>`
+      }
       ${n===null?`<span class="rmt">${d.submittedAt}</span>`:''}
     </div>`;
   return card;
