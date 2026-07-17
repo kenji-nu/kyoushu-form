@@ -567,7 +567,10 @@ function mkG(h,c,slotKey){
   const e=document.createElement('div');e.className='gl2';
   // 時間帯別表示の場合のみ一括ボタンを表示
   const batchBtn = slotKey
-    ? `<button style="margin-left:auto;font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid #f5c6c6;background:#fff5f5;color:var(--red);cursor:pointer;font-weight:500" onclick="batchReject('${slotKey}')">この枠を一括でご案内不可</button>`
+    ? `<div style="margin-left:auto;display:flex;gap:5px;flex-wrap:wrap">
+        <button style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid #f5c6c6;background:#fff5f5;color:var(--red);cursor:pointer;font-weight:500" onclick="batchReject('${slotKey}')">一括でご案内不可</button>
+        <button style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid #e2e6ea;background:#f5f7f9;color:#666;cursor:pointer;font-weight:500" onclick="batchPending('${slotKey}')">一括で未対応に戻す</button>
+      </div>`
     : '';
   e.innerHTML=`${h}<span class="gc">${c}名</span>${batchBtn}`;
   return e;
@@ -613,6 +616,46 @@ async function batchRejectAll(ids){
   rAdmin();
 }
 
+// 枠ごとに一括で未対応に戻す
+function batchPending(slotKey){
+  const targets = AD.filter(d=>{
+    if(d.status!=='rejected') return false;
+    if(!d.slots) return false;
+    return d.slots.split('、').includes(slotKey);
+  });
+  if(targets.length===0){ alert('戻す対象のエントリー者はいません'); return; }
+
+  const overlay=document.createElement('div');
+  overlay.id='batch-pending-modal';
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem';
+
+  const cards=targets.map(d=>`
+    <div style="background:#f5f7f9;border-radius:8px;padding:.75rem 1rem;margin-bottom:8px;font-size:13px">
+      <div style="font-weight:600;margin-bottom:3px">${d.name} <span style="font-size:11px;color:#185FA5;background:#E6F1FB;border-radius:4px;padding:1px 6px">${d.studentId}</span></div>
+      <div style="font-size:11px;color:#666">${d.slots}</div>
+    </div>
+  `).join('');
+
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:12px;padding:1.5rem;max-width:400px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.15)">
+      <div style="font-size:15px;font-weight:700;margin-bottom:.5rem">一括で未対応に戻す</div>
+      <div style="font-size:13px;color:#666;margin-bottom:1rem;line-height:1.6">以下の方を「未対応」に戻します。</div>
+      ${cards}
+      <div style="display:flex;gap:8px;margin-top:1rem">
+        <button onclick="document.getElementById('batch-pending-modal').remove();" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e2e6ea;background:#f5f7f9;font-size:13px;font-weight:600;cursor:pointer">キャンセル</button>
+        <button onclick="batchPendingAll([${targets.map(d=>d.id).join(',')}])" style="flex:1;padding:10px;border-radius:8px;background:#1D9E75;color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer">一括で戻す</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function batchPendingAll(ids){
+  document.getElementById('batch-pending-modal').remove();
+  for(const id of ids){ await markPending(id); }
+  rAdmin();
+}
+
 function mkC(d,n,hl){
   const card=document.createElement('div');card.className='rc';
   const tC=d.transport&&d.transport.includes('希望')?'tbn':d.transport&&d.transport.includes('予約済み')?'tbr':'tbs';
@@ -632,7 +675,10 @@ function mkC(d,n,hl){
       ${d.status==='confirmed'
         ?`<div class="db">✓ 予約確定</div>`
         :d.status==='rejected'
-        ?`<div style="display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 9px;border-radius:9px;background:#f5f5f5;color:var(--t3);font-weight:500">今回はご案内できませんでした</div>`
+        ?`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <div style="display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 9px;border-radius:9px;background:#f5f5f5;color:var(--t3);font-weight:500">今回はご案内できませんでした</div>
+            <button class="cb" style="font-size:11px;padding:3px 10px" onclick="markPending(${d.id})">↩ 未対応に戻す</button>
+          </div>`
         :`<div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="cb" onclick="markDoneWithModal(${d.id})">📞 予約確定</button>
             <button class="cb" style="color:var(--red);border-color:#f5c6c6" onclick="markReject(${d.id})">今回はご案内できませんでした</button>
