@@ -141,6 +141,25 @@ body{font-family:-apple-system,'Hiragino Sans','Yu Gothic',sans-serif;background
 
 </div>
 
+<!-- ② メニュー画面 -->
+<div class="screen" id="sc-menu">
+  <div class="hdr"><div class="hi">🚗</div><div><div class="hs">静岡県自動車学校 沼津校</div><div class="ht">技能教習 空き枠のご案内</div></div></div>
+  <div class="pf" id="menu-prof"></div>
+  <div class="card">
+    <button class="btn" onclick="show('sc-vehicle');buildVG()" style="margin-bottom:.75rem">🚗 空き枠を探す</button>
+    <button class="btn" onclick="showHistory()" style="background:var(--bl);color:var(--bd)">📋 エントリー結果を見る</button>
+  </div>
+  <div class="bk" onclick="show('sc-login')">← 番号入力に戻る</div>
+</div>
+
+<!-- エントリー結果画面 -->
+<div class="screen" id="sc-history">
+  <div class="hdr"><div class="hi">📋</div><div><div class="hs">静岡県自動車学校 沼津校</div><div class="ht">エントリー結果</div></div></div>
+  <div class="pf" id="history-prof"></div>
+  <div id="history-list"><div class="ld">読み込み中...</div></div>
+  <div class="bk" onclick="show('sc-menu')">← 戻る</div>
+</div>
+
 <!-- ② 車種選択 -->
 <div class="screen" id="sc-vehicle">
   <div class="hdr"><div class="hi">🚗</div><div><div class="hs">静岡県自動車学校 沼津校</div><div class="ht">教習車種の選択</div></div></div>
@@ -247,7 +266,60 @@ function doLogin(){
   if(id.length!==7){document.getElementById('er-id').style.display='block';ok=false;}else{document.getElementById('er-id').style.display='none';}
   if(!name){document.getElementById('er-name').style.display='block';ok=false;}else{document.getElementById('er-name').style.display='none';}
   if(!ok)return;
-  cId=id;cName=name;cV=null;buildVG();show('sc-vehicle');
+  cId=id;cName=name;cV=null;showMenu();
+}
+
+// ── メニュー画面 ──
+function showMenu(){
+  const ini=cName.charAt(0);
+  const h=`<div class="av">${ini}</div><div><div class="pn">${cName} 様</div><div class="bgs"><span class="bd bi">No. ${cId}</span></div></div>`;
+  ['menu-prof','history-prof'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=h;});
+  show('sc-menu');
+}
+
+// ── エントリー結果 ──
+async function showHistory(){
+  show('sc-history');
+  document.getElementById('history-list').innerHTML='<div class="ld">読み込み中...</div>';
+  let entries=[];
+  try{
+    const res=await fetch(`${GAS_URL}?action=getEntriesByStudent&studentId=${cId}`);
+    const data=await res.json();
+    entries=data.entries||[];
+  }catch(e){entries=[];}
+
+  const list=document.getElementById('history-list');
+  if(entries.length===0){
+    list.innerHTML='<div class="ld">エントリー履歴はありません</div>';
+    return;
+  }
+
+  list.innerHTML='';
+  entries.reverse().forEach(d=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.style.marginBottom='.75rem';
+
+    let statusHtml='';
+    if(d.status==='confirmed'){
+      statusHtml=`<div style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--gd);background:var(--gl);padding:5px 12px;border-radius:8px;margin-top:.5rem">✓ 予約が確定しました</div>`;
+    }else if(d.status==='rejected'){
+      statusHtml=`<div style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--t2);background:#f5f5f5;padding:5px 12px;border-radius:8px;margin-top:.5rem">今回はご案内できませんでした</div>`;
+    }else{
+      statusHtml=`<div style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--yd);background:var(--yl);padding:5px 12px;border-radius:8px;margin-top:.5rem">⏳ 担当者からの連絡をお待ちください</div>`;
+    }
+
+    const slotArr=d.slots?d.slots.split('、'):[];
+    const slotsHtml=slotArr.map(s=>`<div style="font-size:13px;color:var(--t);margin-bottom:3px">🕐 ${s}</div>`).join('');
+
+    card.innerHTML=`
+      <div style="font-size:11px;color:var(--t2);margin-bottom:.5rem">${d.submittedAt}</div>
+      <div style="margin-bottom:4px"><span class="bd bv">🚗 ${d.vehicle}</span></div>
+      <div style="margin-bottom:.5rem">${slotsHtml}</div>
+      ${statusHtml}
+    `;
+    list.appendChild(card);
+  });
 }
 
 // ── 車種選択 ──
