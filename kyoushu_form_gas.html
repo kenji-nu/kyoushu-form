@@ -622,7 +622,10 @@ function mkC(d,n,hl){
   const chips=slotArr.map(s=>`<span class="rch${hl&&s===hl?' hl':''}">${s}</span>`).join('');
   let footerBtn='';
   if(d.status==='confirmed'){
-    footerBtn=`<div class="db">✓ 予約確定</div>`;
+    footerBtn=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <div class="db">✓ 予約確定</div>
+      <button class="cb" style="font-size:11px;padding:3px 10px;color:var(--red);border-color:#f5c6c6" onclick="cancelConfirmed(${d.id})">予約取り消し</button>
+    </div>`;
   }else if(d.status==='rejected'){
     footerBtn=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
       <div style="font-size:11px;padding:2px 9px;border-radius:9px;background:#f5f5f5;color:var(--t3);font-weight:500">今回はご案内できませんでした</div>
@@ -645,6 +648,14 @@ function mkC(d,n,hl){
     ${d.note?`<div class="rno">💬 ${d.note}</div>`:''}
     <div class="rf">${footerBtn}${n===null?`<span class="rmt">${d.submittedAt}</span>`:''}</div>`;
   return card;
+}
+
+// ── 予約取り消し ──
+async function cancelConfirmed(id){
+  if(!confirm('予約を取り消して「ご案内不可」にしますか？')) return;
+  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'markReject',id})});}catch(e){}
+  const e=AD.find(d=>d.id===id);if(e){e.status='rejected';e.done=false;}
+  rAdmin();
 }
 
 // ── 空き枠設定カレンダー ──
